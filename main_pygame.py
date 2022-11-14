@@ -3,7 +3,6 @@ import platform  # get the os on current device
 import pyautogui  # get the size of the screen
 from scipy.special import binom  # for Bernstein polynomial
 
-
 # get size of current screen and adapt to it's size
 oper_syst = platform.system()
 WIDTH, HEIGHT = pyautogui.size()
@@ -13,24 +12,24 @@ if oper_syst == 'Windows':
     HEIGHT -= 60
 
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
-clock = pg.time.Clock()
+# clock = pg.time.Clock()
 
-koord_list = [100, 100, 500, 300, 500, 600, 100, 800]
+koord_list = [100, 100, 400, 400, 900, 700, 1300, 100]
 border: int = 100
 line_koord_x = []
 line_koord_y = []
 
-colors = {
+colors: dict = {
     "fill": "#212122",
     "area": "#282828",
-    "grid_main_line": "#BAB9C6",
-    "grid_sub_line": "#4E4E59",
+    "grid_main_line": "#8a8996",
+    "grid_sub_line": "#4e4e59",
     "main_dot": "#b3667b",
     "middle_dot": "#dd95b4",
-    "start_button": "#8ec07c",
-    "pause_button": "#8fb66d",
+    "start_button": "#2e601c",
+    "pause_button": "#2f560d",
     "moving_dot": "#fb4943",
-    "line": "#e6d2b5",
+    "line": "#f6e2c5",
     "text": "#000000"
 }
 
@@ -71,12 +70,9 @@ def dots():  # draw dots on inputted coordinates
         pg.draw.circle(WIN, color, (koord_list[k], koord_list[k + 1]), 10)
 
 
-def button(label, color):  # draw button
-    font = pg.font.SysFont("Arial", 60)
-    text = font.render(label, True, colors["text"])
-
+def button(label: str, color: str):  # draw button
     pg.draw.rect(WIN, color, (1500 + (WIDTH - 1500 - 300) / 2, 100, 300, 100), 50, 15)
-    WIN.blit(text, (1500 + (WIDTH - 1500 - 300) / 2 + 150 - text.get_width() / 2, 150 - text.get_height() / 2))
+    blit_text(label, 1500 + (WIDTH - 1500 - 300) / 2 + 150, 150, 3, True, "xy")
 
 
 def polynom(k_x: list, k_y: list, t: float) -> tuple[int, int]:  # count x and y coordinates
@@ -102,18 +98,32 @@ def draw_line(list_x, list_y):  # draw the Bezier curve
 
 
 def draw_numbers():  # draw numbers on axes of a plot
-    font = pg.font.SysFont("Arial", 15)
     for step in range(100, 1600, 100):
-        text = font.render(str(step - 100), True, colors["line"])
-        WIN.blit(text, (step - (text.get_width()/2), 95 - text.get_height()))
+        blit_text(str(step - 100), step, 95, 2, True, "x")
     for step in range(200, 1100, 100):
-        text = font.render(str(step - 100), True, colors["line"])
-        WIN.blit(text, (90 - text.get_width(), step - text.get_height()/2))
+        blit_text(str(step - 100), 90, step, 2, True, "y")
+
+
+def blit_text(string: str, x: int, y: int, size, change=False, change_coord=""):
+    font1 = pg.font.SysFont("Arial", 20, bold=True)
+    font2 = pg.font.SysFont("Arial", 15)
+    font3 = pg.font.SysFont("Arial", 60, bold=True)
+
+    font = font1 if size == 1 else (font2 if size == 2 else font3)
+    text = font.render(string, True, colors["line"])
+
+    if change:
+        x -= text.get_width()
+        y -= text.get_height()
+        if "x" in change_coord:
+            x += text.get_width()/2
+        if "y" in change_coord:
+            y += text.get_height()/2
+
+    WIN.blit(text, (x, y))
 
 
 def redraw_window(time: float, move_point: bool):
-    font = pg.font.SysFont("Arial", 15)
-
     grid(border)
 
     draw_line(line_koord_x, line_koord_y)
@@ -129,10 +139,10 @@ def redraw_window(time: float, move_point: bool):
     x, y = polynom(koord_x, koord_y, time)
     pg.draw.circle(WIN, colors["moving_dot"], (x, y), 10)
 
-    text_koord_x = font.render(str("x: " + str(int(x - 100))), True, colors["line"])
-    text_koord_y = font.render(str("y: " + str(int(y - 100))), True, colors["line"])
-    WIN.blit(text_koord_x, (120, 1020))
-    WIN.blit(text_koord_y, (120, 1040))
+    blit_text("Press SPACE to start/pause", 1500 + (WIDTH - 1800) / 2, 240, 1)
+    blit_text("Press ESC to quit", 1500 + (WIDTH - 1800) / 2, 270, 1)
+    blit_text(str("x: " + str(int(x - 100))), 100, 1020, 2)
+    blit_text("y: " + str(int(y - 100)), 100, 1040, 2)
 
     dots()
 
@@ -146,7 +156,7 @@ def main():
     # fill the list with line coordinate values
     while t <= 1.0:
         polynom(koord_x, koord_y, t)
-        t += 0.001
+        t += 0.0001
 
     pg.init()
     pg.display.set_caption("Bézier curve")
@@ -159,7 +169,7 @@ def main():
                 if event.key == pg.K_ESCAPE:
                     run = False
             if event.type == pg.KEYDOWN:
-                if event.key == 13:  # ENTER key
+                if event.key == pg.K_SPACE:
                     move_point = not move_point
             if event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
@@ -173,10 +183,10 @@ def main():
             time = 0
 
         if move_point:
-            time += 0.001
+            time += 0.01
 
         pg.display.update()
-        clock.tick(1000)
+        # clock.tick(1000)
     pg.quit()
     quit()
 
