@@ -1,26 +1,27 @@
 import pygame as pg
-import platform  # get the os on current device
+from pygame import FULLSCREEN
+
 import pyautogui  # get the size of the screen
 from scipy.special import binom  # for Bernstein polynomial
 
-# get size of current screen and adapt to it's size
-oper_syst = platform.system()
 WIDTH, HEIGHT = pyautogui.size()
-if oper_syst == 'Darwin':
-    HEIGHT -= 117
-if oper_syst == 'Windows':
-    HEIGHT -= 60
 
-WIN = pg.display.set_mode((WIDTH, HEIGHT))
-# clock = pg.time.Clock()
+WIN = pg.display.set_mode((WIDTH, HEIGHT), FULLSCREEN)
 
 koord_list = [100, 100, 400, 400, 900, 700, 1300, 100]
 border: int = 100
 line_koord_x = []
 line_koord_y = []
 
+# split coordinate list into separate x and y coordinate lists
+for i in range(0, len(koord_list)):
+    koord_list[i] += border
+koord_x: list = koord_list[::2]
+koord_y: list = koord_list[1::2]
+
 colors: dict = {
     "fill": "#212122",
+    "rect": "#3F3D43",
     "area": "#282828",
     "grid_main_line": "#8a8996",
     "grid_sub_line": "#4e4e59",
@@ -32,12 +33,6 @@ colors: dict = {
     "line": "#f6e2c5",
     "text": "#000000"
 }
-
-# split coordinate list into separate x and y coordinate lists
-for i in range(0, len(koord_list)):
-    koord_list[i] += border
-koord_x: list = koord_list[::2]
-koord_y: list = koord_list[1::2]
 
 
 def grid(indent: int):  # draw grid only
@@ -108,19 +103,31 @@ def blit_text(string: str, x: int, y: int, size, change=False, change_coord=""):
     font1 = pg.font.SysFont("Arial", 20, bold=True)
     font2 = pg.font.SysFont("Arial", 15)
     font3 = pg.font.SysFont("Arial", 60, bold=True)
+    font4 = pg.font.SysFont("Arial", 50)
 
-    font = font1 if size == 1 else (font2 if size == 2 else font3)
+    font = font1 if size == 1 else (font2 if size == 2 else (font3 if size == 3 else font4))
     text = font.render(string, True, colors["line"])
 
     if change:
         x -= text.get_width()
         y -= text.get_height()
         if "x" in change_coord:
-            x += text.get_width()/2
+            x += text.get_width() / 2
         if "y" in change_coord:
-            y += text.get_height()/2
+            y += text.get_height() / 2
 
     WIN.blit(text, (x, y))
+
+
+def main_menu():
+    WIN.fill(colors["fill"])
+
+    blit_text("Bezier algorithm", WIDTH / 2, 100, 3, True, "x")
+    blit_text("for moving 2D objects", WIDTH / 2, 160, 4, True, "x")
+    pg.draw.rect(WIN, colors["rect"], (100, 200, (WIDTH - 200) / 5 * 3, HEIGHT - 300), int((WIDTH - 200) / 5 * 3), 10)
+    pg.draw.rect(WIN, colors["rect"], (200 + (WIDTH - 200) / 5 * 3, 200,
+                                       WIDTH - (WIDTH - 200) / 5 * 3 - 300, HEIGHT - 700),
+                 int(WIDTH - (WIDTH - 200) / 5 * 3 - 300), 10)
 
 
 def redraw_window(time: float, move_point: bool):
@@ -145,6 +152,7 @@ def redraw_window(time: float, move_point: bool):
     blit_text("y: " + str(int(y - 100)), 100, 1040, 2)
 
     dots()
+    main_menu()
 
 
 def main():
@@ -154,12 +162,12 @@ def main():
     t = 0
 
     # fill the list with line coordinate values
-    while t <= 1.0:
+    while t <= 1:
         polynom(koord_x, koord_y, t)
         t += 0.0001
 
     pg.init()
-    pg.display.set_caption("Bézier curve")
+    pg.display.set_caption("Beziér curve")
 
     while run:
         for event in pg.event.get():
@@ -171,24 +179,26 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     move_point = not move_point
+                    if time > 1:
+                        time = 0
             if event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
                 if 1550 <= mouse[0] <= 1850 and 100 <= mouse[1] <= 200:
                     move_point = not move_point
+                    if time > 1:
+                        time = 0
 
-        if time <= 1.0:
-            redraw_window(time, move_point)
-        else:
+        if time > 1:
             move_point = False
-            time = 0
+        redraw_window(time, move_point)
 
         if move_point:
             time += 0.01
 
         pg.display.update()
-        # clock.tick(1000)
     pg.quit()
     quit()
 
 
-main()
+if __name__ == "__main__":
+    main()
