@@ -4,8 +4,11 @@ import pyautogui  # get the size of the screen
 from scipy.special import binom  # for Bernstein polynomial
 
 # 1366x768 -> 1920x1200
-WIDTH = 1366
-HEIGHT = 768
+# WIDTH, HEIGHT = pyautogui.size()
+WIDTH = 1920
+HEIGHT = 1200
+# WIDTH = 1366
+# HEIGHT = 768
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
 K: float = HEIGHT / 1200
 
@@ -33,7 +36,7 @@ colors: dict = {
     "moving_dot": "#fb4943",
     "line": "#f6e2c5",
     "text": "#000000",
-    "error": "#FF0000"
+    "input": "#2F2D33"
 }
 
 
@@ -134,7 +137,7 @@ def blit_text(string: str, x: int, y: int, size: int, bold=False, change=False, 
     WIN.blit(text, (x, y))
 
 
-def main_menu(points):
+def main_menu(points):  # start menu with point selection
     WIN.fill(colors["fill"])
 
     # title
@@ -147,20 +150,29 @@ def main_menu(points):
     pg.draw.rect(WIN, colors["header"], (BLOCK, 2 * BLOCK, (WIDTH - BLOCK) / 5 * 3, int((HEIGHT - 4 * BLOCK) / 10)), 0,
                  0, 10, 10)
 
+    # START button
     button("START", colors["start_button"], int(2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50), 2 * BLOCK,
            WIDTH - (WIDTH - 2 * BLOCK) / 5 * 3 - 3 * BLOCK - 100, (HEIGHT - 4 * BLOCK) / 4, 100)
 
+    # instructions
     blit_text("Press ESC to quit", int(2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50
               + (WIDTH - (WIDTH - 2 * BLOCK) / 5 * 3 - 3 * BLOCK - 100) / 2),
               int(2 * BLOCK + (HEIGHT - 4 * BLOCK) / 4 + int(40 * K)), 20, True, True, "x")
+
+    # rect title & add/remove points buttons
     blit_text("Point coordinates:", int(1.2 * BLOCK), int(2.2 * BLOCK), 40)
     blit_text("+", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3), 2 * BLOCK, 60)
-    blit_text("-", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3 - 30), 2 * BLOCK, 70)
+    blit_text("-", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3 - 50 * K), 2 * BLOCK, 70)
 
+    # input boxes for every point
     for i in range(1, points + 1):
-        pg.draw.line(WIN, colors["header"], (BLOCK ,2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)),
+        pg.draw.line(WIN, colors["header"], (BLOCK, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)),
                      (BLOCK + (WIDTH - BLOCK) / 5 * 3 - 1, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)), 2)
         blit_text(str(i), int(1.2 * BLOCK), 2 * BLOCK + i * BLOCK, 30, bold=True)
+        pg.draw.rect(WIN, colors["input"], (int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
+        pg.draw.rect(WIN, colors["input"], (8 * BLOCK, 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
+        pg.draw.rect(WIN, colors["input"], (int(4.5 * BLOCK) + int(20 * K), 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
+        pg.draw.rect(WIN, colors["input"], (9 * BLOCK + int(20 * K), 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
 
 
 def window(time: float, move_point: bool):
@@ -187,6 +199,7 @@ def window(time: float, move_point: bool):
     # instructions
     blit_text("Press SPACE to start/pause", int(15 * BLOCK + (WIDTH - 18 * BLOCK) / 2), 9 * BLOCK, 20, True)
     blit_text("Press ESC to quit", int(15 * BLOCK + (WIDTH - 18 * BLOCK) / 2), 9 * BLOCK + int(30 * K), 20, True)
+
 
 def main():
     run: bool = True
@@ -231,7 +244,7 @@ def main():
                             points += 1
 
                     elif BLOCK <= mouse[1] <= 2 * BLOCK + int((HEIGHT - 4 * BLOCK) / 10) and BLOCK + \
-                            (WIDTH - BLOCK) / 5 * 3 - int((HEIGHT - 4 * BLOCK) / 10) - 31 <= mouse[0] <= \
+                            (WIDTH - BLOCK) / 5 * 3 - int((HEIGHT - 4 * BLOCK) / 10) - int(20 * K) <= mouse[0] <= \
                             BLOCK + (WIDTH - BLOCK) / 5 * 3:
                         if points > 3:
                             points -= 1
@@ -251,6 +264,7 @@ def main():
 
         if menu:
             main_menu(points)
+            # input_box(points)
         else:
             window(time, move_point)
         if move_point:
