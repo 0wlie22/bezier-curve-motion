@@ -5,13 +5,14 @@ from scipy.special import binom  # for Bernstein polynomial
 
 # 1366x768 -> 1920x1200
 # WIDTH, HEIGHT = pyautogui.size()
-WIDTH = 1920
-HEIGHT = 1200
-# WIDTH = 1366
-# HEIGHT = 768
+# WIDTH = 1920
+# HEIGHT = 1200
+WIDTH = 1366
+HEIGHT = 768
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
 K: float = HEIGHT / 1200
 
+input_boxes = []
 koord_list = [100, 100, 800, 300, 700, 600, 500, 800]
 BLOCK: int = int((100 * K) - (100 * K) % 2)
 
@@ -40,7 +41,7 @@ colors: dict = {
 }
 
 
-def grid():
+def draw_grid():
     WIN.fill(colors["fill"])
 
     end_x = 15 * BLOCK
@@ -48,7 +49,7 @@ def grid():
 
     pg.draw.rect(WIN, colors["area"], (BLOCK, BLOCK, end_x - BLOCK, end_y - BLOCK))
 
-    draw_numbers()
+    draw_axis_numbers()
     count_x = 0
     count_y = 0
 
@@ -69,7 +70,7 @@ def grid():
         count_y += 1
 
 
-def dots(): # draw dots on inputted coordinates (main dots - dark, other dots - light)
+def draw_curve_dots():
     for k in range(0, len(koord_list) - 1, 2):
         if k == 0 or k == len(koord_list) - 2:
             color = colors["main_dot"]
@@ -79,19 +80,19 @@ def dots(): # draw dots on inputted coordinates (main dots - dark, other dots - 
                        10 * K)
 
 
-def draw_line(list_x, list_y):  # draw the Bézier curve (line only)
+def draw_bezier_curve(list_x, list_y):
     for index in range(0, len(list_x)):
         x = list_x[index] / 100 * BLOCK + BLOCK
         y = list_y[index] / 100 * BLOCK + BLOCK
         pg.draw.circle(WIN, colors["line"], (x, y), 1)
 
 
-def button(label: str, color: str, x: int, y: int, width, height, size):  # draw button
+def draw_button(label: str, color: str, x: int, y: int, width, height, size):
     pg.draw.rect(WIN, color, (x, y, width, height), int(height / 2), 10)
     blit_text(label, x + int(width / 2), y + int(height / 2), size, True, True, "xy")
 
 
-def polynom(k_x: list, k_y: list, t: float) -> tuple[int, int]:  # count x and y coordinates from Bernstein polynomial
+def calculate_polynomial(k_x: list, k_y: list, t: float) -> tuple[int, int]:
     n = int(len(k_x))
     x = y = 0
 
@@ -106,7 +107,7 @@ def polynom(k_x: list, k_y: list, t: float) -> tuple[int, int]:  # count x and y
     return x, y
 
 
-def draw_numbers():  # draw numbers on axes of a plot
+def draw_axis_numbers():
     count = 0
     for step in range(BLOCK, 16 * BLOCK, BLOCK):
         blit_text(str(count), step, BLOCK - int(5 * K), 15, False, True, "x")
@@ -137,7 +138,23 @@ def blit_text(string: str, x: int, y: int, size: int, bold=False, change=False, 
     WIN.blit(text, (x, y))
 
 
-def main_menu(points):  # start menu with point selection
+def draw_input_box(points: int, active_box: int):
+    input_boxes.clear()
+    color = colors["input"]
+    
+    for i in range(1, points + 1):
+        # color = colors["start_button"] if active_box == i + 1 else colors["input"]
+        pg.draw.line(WIN, colors["header"], (BLOCK, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)),
+                     (BLOCK + (WIDTH - BLOCK) / 5 * 3 - 1, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)), 2)
+        blit_text(str(i), int(1.2 * BLOCK), 2 * BLOCK + i * BLOCK, 30, bold=True)
+        blit_text("X:", int(2.9 * BLOCK), 2 * BLOCK + i * BLOCK + int(0.1 * BLOCK), 50)
+        blit_text("Y:", int(7.4 * BLOCK), 2 * BLOCK + i * BLOCK+ int(0.1 * BLOCK), 50)
+        pg.draw.rect(WIN, color, (int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 2 * BLOCK, BLOCK - int(25 * K)))
+        pg.draw.rect(WIN, color, (8 * BLOCK, 2 * BLOCK + i * BLOCK, 2 * BLOCK, BLOCK - int(25 * K)))
+        input_boxes.extend((int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 8 * BLOCK, 2 * BLOCK + i * BLOCK))
+
+
+def main_menu(points: int, active_box: int):
     WIN.fill(colors["fill"])
 
     # title
@@ -151,8 +168,8 @@ def main_menu(points):  # start menu with point selection
                  0, 10, 10)
 
     # START button
-    button("START", colors["start_button"], int(2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50), 2 * BLOCK,
-           WIDTH - (WIDTH - 2 * BLOCK) / 5 * 3 - 3 * BLOCK - 100, (HEIGHT - 4 * BLOCK) / 4, 100)
+    draw_button("START", colors["start_button"], int(2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50), 2 * BLOCK,
+                WIDTH - (WIDTH - 2 * BLOCK) / 5 * 3 - 3 * BLOCK - 100, (HEIGHT - 4 * BLOCK) / 4, 100)
 
     # instructions
     blit_text("Press ESC to quit", int(2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50
@@ -164,21 +181,12 @@ def main_menu(points):  # start menu with point selection
     blit_text("+", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3), 2 * BLOCK, 60)
     blit_text("-", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3 - 50 * K), 2 * BLOCK, 70)
 
-    # input boxes for every point
-    for i in range(1, points + 1):
-        pg.draw.line(WIN, colors["header"], (BLOCK, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)),
-                     (BLOCK + (WIDTH - BLOCK) / 5 * 3 - 1, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)), 2)
-        blit_text(str(i), int(1.2 * BLOCK), 2 * BLOCK + i * BLOCK, 30, bold=True)
-        pg.draw.rect(WIN, colors["input"], (int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
-        pg.draw.rect(WIN, colors["input"], (8 * BLOCK, 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
-        pg.draw.rect(WIN, colors["input"], (int(4.5 * BLOCK) + int(20 * K), 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
-        pg.draw.rect(WIN, colors["input"], (9 * BLOCK + int(20 * K), 2 * BLOCK + i * BLOCK, BLOCK, BLOCK - 25))
+    draw_input_box(points, active_box)
 
 
-def window(time: float, move_point: bool):
-    grid()
-
-    draw_line(line_koord_x, line_koord_y)
+def curve_window(time: float, move_point: bool):
+    draw_grid()
+    draw_bezier_curve(line_koord_x, line_koord_y)
 
     # start/pause button
     if not move_point:
@@ -187,13 +195,13 @@ def window(time: float, move_point: bool):
     else:
         text = "PAUSE"
         color = colors["pause_button"]
-    button(text, color, int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2), BLOCK, 3 * BLOCK, BLOCK, 60)
-    button("back to menu", "#0f360d", int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2),
-           2 * BLOCK + int(25 * K), 3 * BLOCK, BLOCK, 40)
+    draw_button(text, color, int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2), BLOCK, 3 * BLOCK, BLOCK, 60)
+    draw_button("back to menu", "#0f360d", int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2),
+                2 * BLOCK + int(25 * K), 3 * BLOCK, BLOCK, 40)
 
-    dots()
+    draw_curve_dots()
 
-    x, y = polynom(koord_x, koord_y, time)
+    x, y = calculate_polynomial(koord_x, koord_y, time)
     pg.draw.circle(WIN, colors["moving_dot"], (x / 100 * BLOCK + BLOCK, y / 100 * BLOCK + BLOCK), int(10 * K))
 
     # instructions
@@ -204,15 +212,16 @@ def window(time: float, move_point: bool):
 def main():
     run: bool = True
     time: float = 0
-    t: float = 0
     menu: bool = True
     move_point: bool = False
     points: int = 3
+    active_box: int = -1
 
     # fill the list with line coordinate values
-    while t <= 1:
-        polynom(koord_x, koord_y, t)
-        t += 0.0001
+    while time <= 1:
+        calculate_polynomial(koord_x, koord_y, time)
+        time += 0.0001
+    time = 0
 
     pg.init()
     pg.display.set_caption("Beziér curve")
@@ -232,28 +241,41 @@ def main():
             if event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
                 if menu:
+                    # START button in the main menu
                     if 2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50 <= mouse[0] <= \
                             (2 * BLOCK + (WIDTH - 2 * BLOCK) / 5 * 3 + 50) + \
                             (WIDTH - (WIDTH - 2 * BLOCK) / 5 * 3 - 3 * BLOCK - 100) and 2 * BLOCK <= mouse[1] <= \
                             (7 * BLOCK) + (int((HEIGHT - 4 * BLOCK) / 4)):
                         menu = False
+
+                    # + button in the main menu
                     elif BLOCK <= mouse[1] <= 2 * BLOCK + int((HEIGHT - 4 * BLOCK) / 10) and BLOCK + \
                             (WIDTH - BLOCK) / 5 * 3 - int((HEIGHT - 4 * BLOCK) / 10) <= mouse[0] <= \
                             BLOCK + (WIDTH - BLOCK) / 5 * 3:
                         if points < 7:
                             points += 1
 
+                    # - button in the main menu
                     elif BLOCK <= mouse[1] <= 2 * BLOCK + int((HEIGHT - 4 * BLOCK) / 10) and BLOCK + \
                             (WIDTH - BLOCK) / 5 * 3 - int((HEIGHT - 4 * BLOCK) / 10) - int(20 * K) <= mouse[0] <= \
                             BLOCK + (WIDTH - BLOCK) / 5 * 3:
                         if points > 3:
                             points -= 1
 
+                    # point coordinates input boxes in main menu
+                    for i in range(0, int(len(input_boxes)), 2):
+                        if input_boxes[i] <= mouse[0] <= input_boxes[i] + 2 * BLOCK and \
+                            input_boxes[i + 1] <= mouse[1] <= input_boxes[i + 1] + BLOCK - int(25 * K):
+                            active_box = i/2
+
                 else:
+                    # # BACK TO MENU button in curve window
                     if 15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2 <= mouse[0] <= \
                             (15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2) + 3 * BLOCK and \
                             2 * BLOCK + int(25 * K) <= mouse[1] <= 2 * BLOCK + int(25 * K) + BLOCK:
                         menu = True
+
+                    # START button in curve window
                     if int(1550 * K) <= mouse[0] <= int(1850 * K) and BLOCK <= mouse[1] <= 2 * BLOCK:
                         move_point = not move_point
                         if time > 1:
@@ -263,13 +285,11 @@ def main():
             move_point = False
 
         if menu:
-            main_menu(points)
-            # input_box(points)
+            main_menu(points, active_box)
         else:
-            window(time, move_point)
+            curve_window(time, move_point)
         if move_point:
             time += 0.01
-
 
         pg.display.update()
     pg.quit()
