@@ -13,15 +13,10 @@ WIN = pg.display.set_mode((WIDTH, HEIGHT))
 K: float = HEIGHT / 1200
 
 input_boxes = []
-koord_list = [100, 100, 800, 300, 700, 600, 500, 800]
+
+
 BLOCK: int = int((100 * K) - (100 * K) % 2)
 
-line_koord_x: list[int] = []
-line_koord_y: list[int] = []
-
-# split coordinate list into separate x and y coordinate lists
-koord_x: list = koord_list[::2]
-koord_y: list = koord_list[1::2]
 
 colors: dict = {
     "fill": "#212122",
@@ -37,10 +32,11 @@ colors: dict = {
     "moving_dot": "#fb4943",
     "line": "#f6e2c5",
     "text": "#000000",
-    "input": "#2F2D33"
+    "input": "#2F2D33",
+    "back": "#0f360d"
 }
 
-
+# ---------------------------------------------------------------------------- drawing simple items
 def draw_grid():
     WIN.fill(colors["fill"])
 
@@ -70,41 +66,19 @@ def draw_grid():
         count_y += 1
 
 
-def draw_curve_dots():
-    for k in range(0, len(koord_list) - 1, 2):
-        if k == 0 or k == len(koord_list) - 2:
-            color = colors["main_dot"]
-        else:
-            color = colors["middle_dot"]
-        pg.draw.circle(WIN, color, (koord_list[k] / 100 * BLOCK + BLOCK, koord_list[k + 1] / 100 * BLOCK + BLOCK),
-                       10 * K)
-
-
-def draw_bezier_curve(list_x, list_y):
-    for index in range(0, len(list_x)):
-        x = list_x[index] / 100 * BLOCK + BLOCK
-        y = list_y[index] / 100 * BLOCK + BLOCK
-        pg.draw.circle(WIN, colors["line"], (x, y), 1)
-
-
 def draw_button(label: str, color: str, x: int, y: int, width, height, size):
     pg.draw.rect(WIN, color, (x, y, width, height), int(height / 2), 10)
     blit_text(label, x + int(width / 2), y + int(height / 2), size, True, True, "xy")
 
 
-def calculate_polynomial(k_x: list, k_y: list, t: float) -> tuple[int, int]:
-    n = int(len(k_x))
-    x = y = 0
-
-    for j in range(0, n):
-        polynomial = binom(n - 1, j) * (1 - t) ** (n - 1 - j) * (t ** j)
-        x += k_x[j] * polynomial
-        y += k_y[j] * polynomial
-
-    line_koord_x.append(x)
-    line_koord_y.append(y)
-
-    return x, y
+def draw_curve_dots(coord_list: list):
+    for k in range(0, len(coord_list) - 1, 2):
+        if k == 0 or k == len(coord_list) - 2:
+            color = colors["main_dot"]
+        else:
+            color = colors["middle_dot"]
+        pg.draw.circle(WIN, color, (coord_list[k] / 100 * BLOCK + BLOCK, coord_list[k + 1] / 100 * BLOCK + BLOCK),
+                       10 * K)
 
 
 def draw_axis_numbers():
@@ -120,10 +94,7 @@ def draw_axis_numbers():
 
 def blit_text(string: str, x: int, y: int, size: int, bold=False, change=False, change_coord="", text_color=""):
     font = pg.font.SysFont("Arial", int(size * K), bold=True) if bold else pg.font.SysFont("Arial", int(size * K))
-    if text_color == "red":
-        color = colors["error"]
-    else:
-        color = colors["line"]
+    color = colors["red"] if text_color == "red" else colors["line"]
 
     text = font.render(string, True, color)
 
@@ -138,23 +109,50 @@ def blit_text(string: str, x: int, y: int, size: int, bold=False, change=False, 
     WIN.blit(text, (x, y))
 
 
-def draw_input_box(points: int, active_box: int):
+def draw_input_box(points: int, active_box: int, coord_list: list):
     input_boxes.clear()
-    color = colors["input"]
-    
+
     for i in range(1, points + 1):
-        # color = colors["start_button"] if active_box == i + 1 else colors["input"]
         pg.draw.line(WIN, colors["header"], (BLOCK, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)),
                      (BLOCK + (WIDTH - BLOCK) / 5 * 3 - 1, 2 * BLOCK + BLOCK * i + int((HEIGHT - 4 * BLOCK) / 10)), 2)
-        blit_text(str(i), int(1.2 * BLOCK), 2 * BLOCK + i * BLOCK, 30, bold=True)
+        blit_text(str(i + 1), int(1.2 * BLOCK), 2 * BLOCK + i * BLOCK, 30, bold=True)
         blit_text("X:", int(2.9 * BLOCK), 2 * BLOCK + i * BLOCK + int(0.1 * BLOCK), 50)
         blit_text("Y:", int(7.4 * BLOCK), 2 * BLOCK + i * BLOCK+ int(0.1 * BLOCK), 50)
-        pg.draw.rect(WIN, color, (int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 2 * BLOCK, BLOCK - int(25 * K)))
-        pg.draw.rect(WIN, color, (8 * BLOCK, 2 * BLOCK + i * BLOCK, 2 * BLOCK, BLOCK - int(25 * K)))
+
+        color_x = colors["start_button"] if active_box == i * 2 - 1 else colors["input"]
+        color_y = colors["start_button"] if active_box == i * 2 else colors["input"]
+
+        pg.draw.rect(WIN, color_x, (int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 2 * BLOCK, BLOCK - int(25 * K)))
+        pg.draw.rect(WIN, color_y, (8 * BLOCK, 2 * BLOCK + i * BLOCK, 2 * BLOCK, BLOCK - int(25 * K)))
         input_boxes.extend((int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 8 * BLOCK, 2 * BLOCK + i * BLOCK))
+        blit_text(str(coord_list[2 * i - 2]), int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 70)
+        blit_text(str(coord_list[2 * i - 1]), 8 * BLOCK, 2 * BLOCK + i * BLOCK, 70)
+# ---------------------------------------------------------------------------- drawing simple items
 
 
-def main_menu(points: int, active_box: int):
+def draw_bezier_curve(line_coord_x: list, line_coord_y: list):
+    for index in range(0, len(line_coord_x)):
+        x = line_coord_x[index] / 100 * BLOCK + BLOCK
+        y = line_coord_y[index] / 100 * BLOCK + BLOCK
+        pg.draw.circle(WIN, colors["line"], (x, y), 1)
+
+
+def calculate_polynomial(x_coordinates: list, y_coordinates: list, line_coord_x: list, line_coord_y: list, time: float) -> tuple[int, int]:
+    n = int(len(x_coordinates))
+    x = y = 0
+
+    for j in range(0, n):
+        polynomial = binom(n - 1, j) * (1 - time) ** (n - 1 - j) * (time ** j)
+        x += x_coordinates[j] * polynomial
+        y += y_coordinates[j] * polynomial
+
+    line_coord_x.append(x)
+    line_coord_y.append(y)
+
+    return x, y
+
+
+def main_menu(points: int, active_box: int, coord_list: list):
     WIN.fill(colors["fill"])
 
     # title
@@ -181,12 +179,12 @@ def main_menu(points: int, active_box: int):
     blit_text("+", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3), 2 * BLOCK, 60)
     blit_text("-", int(0.5 * BLOCK + (WIDTH - BLOCK) / 5 * 3 - 50 * K), 2 * BLOCK, 70)
 
-    draw_input_box(points, active_box)
+    draw_input_box(points, active_box, coord_list)
 
 
-def curve_window(time: float, move_point: bool):
+def curve_window(time: float, move_point: bool, line_coord_x: list, line_coord_y: list, coord_list: list, x_coordinates: list, y_coordinates: list):
     draw_grid()
-    draw_bezier_curve(line_koord_x, line_koord_y)
+    draw_bezier_curve(line_coord_x, line_coord_y)
 
     # start/pause button
     if not move_point:
@@ -196,12 +194,12 @@ def curve_window(time: float, move_point: bool):
         text = "PAUSE"
         color = colors["pause_button"]
     draw_button(text, color, int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2), BLOCK, 3 * BLOCK, BLOCK, 60)
-    draw_button("back to menu", "#0f360d", int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2),
+    draw_button("back to menu", colors["back"], int(15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2),
                 2 * BLOCK + int(25 * K), 3 * BLOCK, BLOCK, 40)
 
-    draw_curve_dots()
+    draw_curve_dots(coord_list)
 
-    x, y = calculate_polynomial(koord_x, koord_y, time)
+    x, y = calculate_polynomial(x_coordinates, y_coordinates, line_coord_x, line_coord_y, time)
     pg.draw.circle(WIN, colors["moving_dot"], (x / 100 * BLOCK + BLOCK, y / 100 * BLOCK + BLOCK), int(10 * K))
 
     # instructions
@@ -216,12 +214,12 @@ def main():
     move_point: bool = False
     points: int = 3
     active_box: int = -1
-
-    # fill the list with line coordinate values
-    while time <= 1:
-        calculate_polynomial(koord_x, koord_y, time)
-        time += 0.0001
-    time = 0
+    user_text: str = ""
+    coord_list = [0] * points * 2
+    line_coord_x: list[int] = []
+    line_coord_y: list[int] = []
+    x_coordinates: list = []
+    y_coordinates: list = []
 
     pg.init()
     pg.display.set_caption("Beziér curve")
@@ -248,12 +246,24 @@ def main():
                             (7 * BLOCK) + (int((HEIGHT - 4 * BLOCK) / 4)):
                         menu = False
 
+                        # split coordinate list into separate x and y coordinate lists
+                        x_coordinates = coord_list[::2]
+                        y_coordinates = coord_list[1::2]
+
+                        # fill the list with line coordinate values
+                        while time <= 1:
+                            calculate_polynomial(x_coordinates, y_coordinates, line_coord_x, line_coord_y, time)
+                            time += 0.001
+                        time = 0
+
                     # + button in the main menu
                     elif BLOCK <= mouse[1] <= 2 * BLOCK + int((HEIGHT - 4 * BLOCK) / 10) and BLOCK + \
                             (WIDTH - BLOCK) / 5 * 3 - int((HEIGHT - 4 * BLOCK) / 10) <= mouse[0] <= \
                             BLOCK + (WIDTH - BLOCK) / 5 * 3:
                         if points < 7:
                             points += 1
+                            active_box = -1
+                            coord_list.extend((0,0))
 
                     # - button in the main menu
                     elif BLOCK <= mouse[1] <= 2 * BLOCK + int((HEIGHT - 4 * BLOCK) / 10) and BLOCK + \
@@ -261,19 +271,26 @@ def main():
                             BLOCK + (WIDTH - BLOCK) / 5 * 3:
                         if points > 3:
                             points -= 1
+                            active_box = -1
+                            del coord_list[-2:]
+
 
                     # point coordinates input boxes in main menu
                     for i in range(0, int(len(input_boxes)), 2):
                         if input_boxes[i] <= mouse[0] <= input_boxes[i] + 2 * BLOCK and \
                             input_boxes[i + 1] <= mouse[1] <= input_boxes[i + 1] + BLOCK - int(25 * K):
-                            active_box = i/2
+                            active_box = int(i/2 + 1)
+                            user_text = ""
 
                 else:
-                    # # BACK TO MENU button in curve window
+                    # BACK TO MENU button in curve window
                     if 15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2 <= mouse[0] <= \
                             (15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2) + 3 * BLOCK and \
                             2 * BLOCK + int(25 * K) <= mouse[1] <= 2 * BLOCK + int(25 * K) + BLOCK:
                         menu = True
+                        coord_list = [0] * points * 2
+                        line_coord_y.clear()
+                        line_coord_x.clear()
 
                     # START button in curve window
                     if int(1550 * K) <= mouse[0] <= int(1850 * K) and BLOCK <= mouse[1] <= 2 * BLOCK:
@@ -281,13 +298,37 @@ def main():
                         if time > 1:
                             time = 0
 
+            if active_box != -1:
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_BACKSPACE:
+                        user_text = user_text[:-1]
+                        if len(user_text) == 0:
+                            user_text = "0"
+                    else:
+                        user_text += event.unicode
+
+                    if user_text.isnumeric():
+                        if active_box % 2 == 1:
+                            if 0 <= int(user_text) <= 1400:
+                                coord_list[active_box - 1] = int(user_text)
+                            else:
+                                user_text = "0"
+                        else:
+                            if 0 <= int(user_text) <= 900:
+                                coord_list[active_box - 1] = int(user_text)
+                            else:
+                                user_text = "0"
+                    else:
+                        user_text = "0"
+
         if time > 1:
             move_point = False
 
         if menu:
-            main_menu(points, active_box)
+            main_menu(points, active_box, coord_list)
         else:
-            curve_window(time, move_point)
+            curve_window(time, move_point, line_coord_x, line_coord_y, coord_list, x_coordinates, y_coordinates)
+
         if move_point:
             time += 0.01
 
