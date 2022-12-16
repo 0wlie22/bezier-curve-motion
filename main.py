@@ -5,10 +5,10 @@ from scipy.special import binom  # for Bernstein polynomial
 
 # 1366x768 -> 1920x1200
 # WIDTH, HEIGHT = pyautogui.size()
-# WIDTH = 1920
-# HEIGHT = 1200
-WIDTH = 1366
-HEIGHT = 768
+WIDTH = 1920
+HEIGHT = 1200
+# WIDTH = 1366
+# HEIGHT = 768
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
 K: float = HEIGHT / 1200
 
@@ -137,7 +137,11 @@ def draw_bezier_curve(line_coord_x: list, line_coord_y: list):
         pg.draw.circle(WIN, colors["line"], (x, y), 1)
 
 
-def calculate_polynomial(x_coordinates: list, y_coordinates: list, line_coord_x: list, line_coord_y: list, time: float) -> tuple[int, int]:
+def calculate_polynomial(line_coord_x: list, line_coord_y: list, time: float, coord_list: list) -> tuple[int, int]:
+    # split coordinate list into separate x and y coordinate lists
+    x_coordinates = coord_list[::2]
+    y_coordinates = coord_list[1::2]
+
     n = int(len(x_coordinates))
     x = y = 0
 
@@ -199,7 +203,7 @@ def curve_window(time: float, move_point: bool, line_coord_x: list, line_coord_y
 
     draw_curve_dots(coord_list)
 
-    x, y = calculate_polynomial(x_coordinates, y_coordinates, line_coord_x, line_coord_y, time)
+    x, y = calculate_polynomial(line_coord_x, line_coord_y, time, coord_list)
     pg.draw.circle(WIN, colors["moving_dot"], (x / 100 * BLOCK + BLOCK, y / 100 * BLOCK + BLOCK), int(10 * K))
 
     # instructions
@@ -246,13 +250,9 @@ def main():
                             (7 * BLOCK) + (int((HEIGHT - 4 * BLOCK) / 4)):
                         menu = False
 
-                        # split coordinate list into separate x and y coordinate lists
-                        x_coordinates = coord_list[::2]
-                        y_coordinates = coord_list[1::2]
-
                         # fill the list with line coordinate values
                         while time <= 1:
-                            calculate_polynomial(x_coordinates, y_coordinates, line_coord_x, line_coord_y, time)
+                            calculate_polynomial(line_coord_x, line_coord_y, time, coord_list)
                             time += 0.001
                         time = 0
 
