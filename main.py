@@ -1,22 +1,15 @@
 import pygame as pg
-
-import pyautogui  # get the size of the screen
 from scipy.special import binom  # for Bernstein polynomial
 
-# 1366x768 -> 1920x1200
-# WIDTH, HEIGHT = pyautogui.size()
-WIDTH = 1920
-HEIGHT = 1200
-# WIDTH = 1366
-# HEIGHT = 768
+WIDTH = 1366
+HEIGHT = 768
+
 WIN = pg.display.set_mode((WIDTH, HEIGHT))
 K: float = HEIGHT / 1200
 
 input_boxes = []
 
-
 BLOCK: int = int((100 * K) - (100 * K) % 2)
-
 
 colors: dict = {
     "fill": "#212122",
@@ -36,7 +29,6 @@ colors: dict = {
     "back": "#0f360d"
 }
 
-# ---------------------------------------------------------------------------- drawing simple items
 def draw_grid():
     WIN.fill(colors["fill"])
 
@@ -127,7 +119,6 @@ def draw_input_box(points: int, active_box: int, coord_list: list):
         input_boxes.extend((int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 8 * BLOCK, 2 * BLOCK + i * BLOCK))
         blit_text(str(coord_list[2 * i - 2]), int(3.5 * BLOCK), 2 * BLOCK + i * BLOCK, 70)
         blit_text(str(coord_list[2 * i - 1]), 8 * BLOCK, 2 * BLOCK + i * BLOCK, 70)
-# ---------------------------------------------------------------------------- drawing simple items
 
 
 def draw_bezier_curve(line_coord_x: list, line_coord_y: list):
@@ -186,7 +177,7 @@ def main_menu(points: int, active_box: int, coord_list: list):
     draw_input_box(points, active_box, coord_list)
 
 
-def curve_window(time: float, move_point: bool, line_coord_x: list, line_coord_y: list, coord_list: list, x_coordinates: list, y_coordinates: list):
+def curve_window(time: float, move_point: bool, line_coord_x: list, line_coord_y: list, coord_list: list):
     draw_grid()
     draw_bezier_curve(line_coord_x, line_coord_y)
 
@@ -222,8 +213,6 @@ def main():
     coord_list = [0] * points * 2
     line_coord_x: list[int] = []
     line_coord_y: list[int] = []
-    x_coordinates: list = []
-    y_coordinates: list = []
 
     pg.init()
     pg.display.set_caption("Beziér curve")
@@ -291,9 +280,11 @@ def main():
                         coord_list = [0] * points * 2
                         line_coord_y.clear()
                         line_coord_x.clear()
+                        time = 0
 
                     # START button in curve window
-                    if int(1550 * K) <= mouse[0] <= int(1850 * K) and BLOCK <= mouse[1] <= 2 * BLOCK:
+                    if 15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2 <= mouse[0] <= \
+                            (15 * BLOCK + (WIDTH - 15 * BLOCK - BLOCK * 3) / 2) + 3 * BLOCK and BLOCK <= mouse[1] <= 2 * BLOCK:
                         move_point = not move_point
                         if time > 1:
                             time = 0
@@ -327,7 +318,7 @@ def main():
         if menu:
             main_menu(points, active_box, coord_list)
         else:
-            curve_window(time, move_point, line_coord_x, line_coord_y, coord_list, x_coordinates, y_coordinates)
+            curve_window(time, move_point, line_coord_x, line_coord_y, coord_list)
 
         if move_point:
             time += 0.01
